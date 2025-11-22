@@ -118,6 +118,11 @@ Ask queries like:
 > 🔹 Explain warehouse stock update logic  
 
 ---
+## 📽️ Project Demo Video
+
+Watch the full demo of our Hackathon project here:  
+👉 [Click to Watch Video](https://drive.google.com/file/d/1XfSFeYR4a0NvduKiZu2XrUTkVAvttB75/view?usp=drivesdk)
+
 
 ## 📌 Author
 👤 **Raj Gohel**  
