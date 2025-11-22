@@ -13,7 +13,7 @@ import {
   FaWarehouse,
   FaExchangeAlt,
   FaTools,
-  FaSignOutAlt
+  FaSignOutAlt,
 } from "react-icons/fa";
 
 export default function Sidebar() {
@@ -36,12 +36,12 @@ export default function Sidebar() {
 
   const managerLinks = [
     { to: "/products", label: "Products", icon: <FaBox /> },
-    { to: "/receipts", label: "Receipts", icon: <FaTruckLoading /> },
     { to: "/delivery", label: "Delivery Orders", icon: <FaTruck /> },
     { to: "/warehouses", label: "Warehouses", icon: <FaWarehouse /> },
   ];
 
   const staffLinks = [
+    { to: "/receipts", label: "Receipts", icon: <FaTruckLoading /> },
     { to: "/transfer", label: "Internal Transfers", icon: <FaExchangeAlt /> },
     { to: "/adjustment", label: "Stock Adjustments", icon: <FaTools /> },
   ];
