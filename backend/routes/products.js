@@ -37,3 +37,5 @@ router.get("/", async (req, res) => {
   const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   res.json(items);
 });
+
+module.exports = router;

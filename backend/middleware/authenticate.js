@@ -1,4 +1,4 @@
-const { auth } = require("../index");
+const { auth } = require("../firebase");
 
 const authenticate = async (req, res, next) => {
   const header = req.headers.authorization || "";
@@ -7,7 +7,7 @@ const authenticate = async (req, res, next) => {
   if (!token) return res.status(401).json({ error: "No token provided" });
 
   try {
-    const decoded = await auth.verifyIdToken(token);
+     const decoded = await auth.verifyIdToken(token); 
     req.user = decoded;
     next();
   } catch (error) {
