@@ -73,3 +73,9 @@ Thumbs.db
 # 🔹 Firebase Emulators
 firebase-emulator-suite/
 
+# 🔒 Sensitive JSON files (Firebase credentials, service accounts)
+*.secret.json
+*.credentials.json
+serviceAccountKey.json
+firebaseConfig.json
+firebaseConfig.js
