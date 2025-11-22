@@ -2,6 +2,7 @@ const { db, auth } = require("../firebase");
 const express = require("express");
 const router = express.Router();
 
+/* =============== Add Product  ==================*/
 router.post("/", async (req, res) => {
   try {
     const { name, sku, category, uom, reorderLevel } = req.body;
@@ -29,7 +30,8 @@ router.post("/", async (req, res) => {
 });
 
 
-// list products
+
+/* =============== List Product  ==================*/
 router.get("/", async (req, res) => {
   const snap = await db.collection("products").get();
   const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));

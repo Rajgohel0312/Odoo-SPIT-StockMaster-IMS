@@ -18,11 +18,15 @@ const authenticate = require("./middleware/authenticate");
 const authRoutes = require("./routes/auth");
 const otpRoutes = require("./routes/otp");
 const productRoutes = require("./routes/products");
+const operationRoutes = require("./routes/operations");
+const dashboardRoutes = require("./routes/dashboard");
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/products", authenticate, productRoutes);
-
+app.use("/api/operations", authenticate, operationRoutes);
+app.use("/api/dashboard", authenticate, dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
