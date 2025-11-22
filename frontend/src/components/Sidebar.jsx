@@ -1,6 +1,20 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../AuthProvider";
+import { toast } from "react-toastify";
+import {
+  FaTachometerAlt,
+  FaUser,
+  FaHistory,
+  FaRobot,
+  FaBox,
+  FaTruckLoading,
+  FaTruck,
+  FaWarehouse,
+  FaExchangeAlt,
+  FaTools,
+  FaSignOutAlt
+} from "react-icons/fa";
 
 export default function Sidebar() {
   const { logout, role } = useContext(AuthContext);
@@ -8,32 +22,30 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await logout();
+    toast.success("Logged out successfully!", { autoClose: 2000 });
     navigate("/");
   };
 
-  // 🔹 Common to all users
+  // 🔹 With icons
   const commonLinks = [
-    { to: "/", label: "Dashboard" },
-    { to: "/profile", label: "Profile" },
-    { to: "/history", label: "History" },
-    { to: "/ai", label: "AI Assistant 🤖" },
+    { to: "/", label: "Dashboard", icon: <FaTachometerAlt /> },
+    { to: "/profile", label: "Profile", icon: <FaUser /> },
+    { to: "/history", label: "History", icon: <FaHistory /> },
+    { to: "/ai", label: "AI Assistant", icon: <FaRobot /> },
   ];
 
-  // 🔹 Inventory Manager Features
   const managerLinks = [
-    { to: "/products", label: "Products" },
-    { to: "/receipts", label: "Receipts" },
-    { to: "/delivery", label: "Delivery Orders" },
-    { to: "/warehouses", label: "Settings: Warehouses" },
+    { to: "/products", label: "Products", icon: <FaBox /> },
+    { to: "/receipts", label: "Receipts", icon: <FaTruckLoading /> },
+    { to: "/delivery", label: "Delivery Orders", icon: <FaTruck /> },
+    { to: "/warehouses", label: "Warehouses", icon: <FaWarehouse /> },
   ];
 
-  // 🔹 Warehouse Staff Features
   const staffLinks = [
-    { to: "/transfer", label: "Internal Transfers" },
-    { to: "/adjustment", label: "Stock Adjustments" },
+    { to: "/transfer", label: "Internal Transfers", icon: <FaExchangeAlt /> },
+    { to: "/adjustment", label: "Stock Adjustments", icon: <FaTools /> },
   ];
 
-  // 🔹 Final allowed links based on role
   const links = [
     ...commonLinks,
     ...(role === "inventory_manager" ? managerLinks : []),
@@ -42,7 +54,9 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 min-h-screen bg-gray-900 text-white flex flex-col p-6 shadow-lg">
-      <h2 className="text-2xl font-bold mb-8 tracking-wide">StockMaster</h2>
+      <h2 className="text-3xl font-extrabold mb-8 tracking-wide text-center">
+        StockMaster
+      </h2>
 
       <nav className="flex-grow space-y-2">
         {links.map((link) => (
@@ -50,24 +64,25 @@ export default function Sidebar() {
             key={link.to}
             to={link.to}
             className={({ isActive }) =>
-              `block px-4 py-2 rounded-lg text-sm font-medium transition 
+              `flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition-all
               ${
                 isActive
-                  ? "bg-gray-700 text-white"
+                  ? "bg-blue-600 text-white shadow-md"
                   : "text-gray-300 hover:bg-gray-800 hover:text-white"
               }`
             }
           >
+            <span className="text-lg">{link.icon}</span>
             {link.label}
           </NavLink>
         ))}
       </nav>
 
       <button
-        className="mt-auto w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition"
+        className="mt-auto w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md"
         onClick={handleLogout}
       >
-        🚪 Logout
+        <FaSignOutAlt className="text-lg" /> Logout
       </button>
     </aside>
   );

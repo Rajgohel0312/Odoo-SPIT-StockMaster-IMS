@@ -1,23 +1,32 @@
 import { useState } from "react";
 import api from "../api";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     role: "inventory_manager",
   });
 
+  const [error, setError] = useState("");
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (form.password !== form.confirmPassword) {
+      return setError("Passwords do not match!");
+    }
+
     try {
       await api.post("/auth/signup", form);
       alert("Signup successful, now login.");
-      window.location.href = "/";
+      navigate("/");
     } catch (err) {
-      alert(err.response?.data?.error || "Error during signup");
+      setError(err.response?.data?.error || "Error during signup");
     }
   };
 
@@ -27,6 +36,12 @@ export default function Signup() {
         <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
           Create Account
         </h2>
+
+        {error && (
+          <p className="text-red-500 bg-red-100 p-2 rounded-md text-sm mb-2">
+            {error}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -51,6 +66,14 @@ export default function Signup() {
             className="w-full p-3 border rounded-lg focus:ring focus:ring-blue-200 outline-none"
             required
             onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            className="w-full p-3 border rounded-lg focus:ring focus:ring-blue-200 outline-none"
+            required
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
           />
 
           <select

@@ -17,43 +17,55 @@ import Warehouses from "./pages/Warehouses";
 import OperationDetail from "./pages/OperationDetail";
 import "./App.css";
 import AIChat from "./pages/AIChat";
-
+import { ToastContainer } from "react-toastify";
 function App() {
   const { user } = useContext(AuthContext);
 
   return (
-    <BrowserRouter>
-      {!user ? (
-        // 🔹 Auth Pages: No Sidebar
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/reset" element={<PasswordReset />} />
-        </Routes>
-      ) : (
-        // 🔹 Logged-in Pages: Sidebar + Content Wrapper
-        <div className="flex min-h-screen bg-gray-100">
-          <Sidebar />
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="colored"
+      />
+      <BrowserRouter>
+        {!user ? (
+          // 🔹 Auth Pages: No Sidebar
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/reset" element={<PasswordReset />} />
+          </Routes>
+        ) : (
+          // 🔹 Logged-in Pages: Sidebar + Content Wrapper
+          <div className="flex min-h-screen bg-gray-100">
+            <Sidebar />
 
-          {/* Content Area */}
-          <div className="flex-grow p-6">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/delivery" element={<Delivery />} />
-              <Route path="/transfer" element={<Transfer />} />
-              <Route path="/adjustment" element={<Adjustment />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/warehouses" element={<Warehouses />} />
-              <Route path="/ai" element={<AIChat />} />
-              <Route path="/operations/:id" element={<OperationDetail />} />
-            </Routes>
+            {/* Content Area */}
+            <div className="flex-grow p-6">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/receipts" element={<Receipts />} />
+                <Route path="/delivery" element={<Delivery />} />
+                <Route path="/transfer" element={<Transfer />} />
+                <Route path="/adjustment" element={<Adjustment />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/warehouses" element={<Warehouses />} />
+                <Route path="/ai" element={<AIChat />} />
+                <Route path="/operations/:id" element={<OperationDetail />} />
+              </Routes>
+            </div>
           </div>
-        </div>
-      )}
-    </BrowserRouter>
+        )}
+      </BrowserRouter>
+    </>
   );
 }
 
