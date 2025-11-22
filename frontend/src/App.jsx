@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import Warehouses from "./pages/Warehouses";
 import OperationDetail from "./pages/OperationDetail";
 import "./App.css";
+import AIChat from "./pages/AIChat";
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -46,6 +47,7 @@ function App() {
               <Route path="/history" element={<History />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/warehouses" element={<Warehouses />} />
+              <Route path="/ai" element={<AIChat />} />
               <Route path="/operations/:id" element={<OperationDetail />} />
             </Routes>
           </div>

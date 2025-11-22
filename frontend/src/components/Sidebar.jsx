@@ -16,6 +16,7 @@ export default function Sidebar() {
     { to: "/", label: "Dashboard" },
     { to: "/profile", label: "Profile" },
     { to: "/history", label: "History" },
+    { to: "/ai", label: "AI Assistant 🤖" },
   ];
 
   // 🔹 Inventory Manager Features
