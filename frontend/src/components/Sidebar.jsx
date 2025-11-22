@@ -1,24 +1,26 @@
 import { NavLink } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../AuthProvider";
+
 export default function Sidebar() {
   const { logout } = useContext(AuthContext);
-  const links = [{ to: "/", label: "Dashboard" }];
+
+  const links = [
+    { to: "/", label: "Dashboard" },
+    { to: "/products", label: "Products" },
+  ];
 
   return (
     <aside className="sidebar">
       <h2>StockMaster</h2>
       <nav>
-        {links.map((link) => (
+        {links.map(link => (
           <NavLink key={link.to} to={link.to} className="nav-link">
             {link.label}
           </NavLink>
         ))}
       </nav>
-
-      <button className="logout-btn" onClick={logout}>
-        🚪 Logout
-      </button>
+      <button className="logout-btn" onClick={logout}>🚪 Logout</button>
     </aside>
   );
 }
