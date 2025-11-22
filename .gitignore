@@ -79,3 +79,4 @@ firebase-emulator-suite/
 serviceAccountKey.json
 firebaseConfig.json
 firebaseConfig.js
+backend/firebase.js
