@@ -7,7 +7,7 @@ const authenticate = async (req, res, next) => {
   if (!token) return res.status(401).json({ error: "No token provided" });
 
   try {
-     const decoded = await auth.verifyIdToken(token); 
+    const decoded = await auth.verifyIdToken(token);
     req.user = decoded;
     next();
   } catch (error) {
@@ -15,6 +15,5 @@ const authenticate = async (req, res, next) => {
     res.status(401).json({ error: "Invalid token" });
   }
 };
-
 
 module.exports = authenticate;

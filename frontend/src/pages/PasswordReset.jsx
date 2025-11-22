@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../api";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import {
   FaEnvelope,
   FaLock,
@@ -9,6 +9,7 @@ import {
   FaEyeSlash,
   FaUndo,
 } from "react-icons/fa";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function PasswordReset() {
   const [email, setEmail] = useState("");
@@ -17,7 +18,6 @@ export default function PasswordReset() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-
   const [timer, setTimer] = useState(0);
 
   const requestOTP = async () => {
@@ -25,10 +25,10 @@ export default function PasswordReset() {
     setLoading(true);
     try {
       await api.post("/otp/request-reset", { email });
-      toast.success("OTP sent to your email.");
+      toast.success("📩 OTP sent to your email.");
       setStep(2);
 
-      // Start 30-sec timer to prevent repeated OTP requests
+      // Start 30-sec timer
       setTimer(30);
       const countdown = setInterval(() => {
         setTimer((prev) => {
@@ -37,15 +37,14 @@ export default function PasswordReset() {
         });
       }, 1000);
     } catch (err) {
-      toast.error("Failed to send OTP. Try again later.");
+      toast.error("❌ Failed to send OTP. Try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   const resetPassword = async () => {
-    if (!code || !newPass)
-      return toast.warning("Enter OTP and new password.");
+    if (!code || !newPass) return toast.warning("Enter OTP and new password.");
     setLoading(true);
     try {
       await api.post("/otp/reset-password", {
@@ -53,10 +52,10 @@ export default function PasswordReset() {
         code,
         newPassword: newPass,
       });
-      toast.success("Password successfully updated!");
-      window.location.href = "/";
+      toast.success("🎉 Password successfully updated! Redirecting...");
+      setTimeout(() => (window.location.href = "/"), 2000);
     } catch (err) {
-      toast.error("Invalid OTP or error updating password.");
+      toast.error("⚠️ Invalid OTP or error updating password.");
     } finally {
       setLoading(false);
     }
@@ -64,6 +63,9 @@ export default function PasswordReset() {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      {/* 🔹 Toast Container (Required for toast to work) */}
+      <ToastContainer position="top-right" autoClose={3000} />
+
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border border-gray-200">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
           Reset Password 🔐
@@ -84,18 +86,12 @@ export default function PasswordReset() {
             <button
               onClick={requestOTP}
               disabled={loading || timer > 0}
-              className={`w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg shadow transition ${
+              className={`w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg shadow transition ${
                 loading || timer > 0 ? "opacity-60 cursor-not-allowed" : ""
               }`}
             >
-              {loading ? "Sending OTP..." : "Request OTP"}
+              {loading ? "Sending OTP..." : timer > 0 ? `Wait ${timer}s` : "Request OTP"}
             </button>
-
-            {timer > 0 && (
-              <p className="text-center text-gray-600 text-sm">
-                You can request again in <b>{timer}s</b>
-              </p>
-            )}
           </div>
         )}
 
@@ -117,7 +113,9 @@ export default function PasswordReset() {
                 type={showPass ? "text" : "password"}
                 placeholder="New Password"
                 className="w-full pl-10 p-3 border rounded-lg bg-gray-50 focus:ring focus:ring-green-200 outline-none"
-                onChange={(e) => setNewPass(e.target.value)}
+                onChange={(e) =>
+                  setNewPass(e.target.value)
+                }
               />
               <div
                 className="absolute right-3 top-3 cursor-pointer text-gray-500"
@@ -130,7 +128,7 @@ export default function PasswordReset() {
             <button
               onClick={resetPassword}
               disabled={loading}
-              className={`w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg shadow transition ${
+              className={`w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg shadow transition ${
                 loading ? "opacity-60 cursor-not-allowed" : ""
               }`}
             >
@@ -140,7 +138,10 @@ export default function PasswordReset() {
         )}
 
         <div className="mt-4 text-center">
-          <a href="/" className="text-blue-600 hover:underline flex items-center justify-center gap-1">
+          <a
+            href="/"
+            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+          >
             <FaUndo /> Back to Login
           </a>
         </div>

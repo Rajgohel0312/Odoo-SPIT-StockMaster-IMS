@@ -19,12 +19,16 @@ router.post("/signup", async (req, res) => {
       .set({
         name,
         email,
-        role: role || "inventory management",
+        role: role || "warehouse_staff",
         createdAt: new Date(),
       });
 
+    // 3️⃣ Assign Custom Claim (critical for role-based access!)
+    await auth.setCustomUserClaims(userRecord.uid, { role });
+
     return res.status(201).json({
       success: true,
+      message: "Signup successful. Please log in again.",
       uid: userRecord.uid,
       name,
       email,
@@ -38,6 +42,7 @@ router.post("/signup", async (req, res) => {
     });
   }
 });
+
 router.get("/profile/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
