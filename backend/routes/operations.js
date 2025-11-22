@@ -234,15 +234,44 @@ router.post("/adjustment", async (req, res) => {
 
 /* =============== History ==================*/
 router.get("/history", async (req, res) => {
-  const { type, status } = req.query;
-  let q = db.collection("operations");
+  try {
+    let { type, status, warehouseId, category, startDate, endDate } = req.query;
 
-  if (type) q = q.where("type", "==", type);
-  if (status) q = q.where("status", "==", status);
+    let q = db.collection("operations");
 
-  const snap = await q.orderBy("createdAt", "desc").limit(100).get();
-  const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  res.json(items);
+    if (type) q = q.where("type", "==", type);
+    if (status) q = q.where("status", "==", status);
+    if (warehouseId)
+      q = q
+        .where("fromWarehouseId", "==", warehouseId)
+        .where("toWarehouseId", "==", warehouseId);
+
+    // Date filtering (createdAt)
+    if (startDate && endDate) {
+      q = q
+        .where("createdAt", ">=", new Date(startDate))
+        .where("createdAt", "<=", new Date(endDate));
+    }
+
+    const snap = await q.orderBy("createdAt", "desc").limit(100).get();
+    const operations = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    // Filter Category from Products (JOIN-like behavior)
+    if (category) {
+      const prodSnap = await db
+        .collection("products")
+        .where("category", "==", category)
+        .get();
+      const productIds = prodSnap.docs.map((d) => d.id);
+      operations = operations.filter((op) =>
+        op.items.some((item) => productIds.includes(item.productId))
+      );
+    }
+
+    res.json(operations);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to load operation history" });
+  }
 });
 
 module.exports = router;

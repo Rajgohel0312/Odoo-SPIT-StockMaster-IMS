@@ -7,9 +7,13 @@ export default function Sidebar() {
 
   const links = [
     { to: "/", label: "Dashboard" },
+    { to: "/profile", label: "Profile" },
     { to: "/products", label: "Products" },
     { to: "/receipts", label: "Receipts" },
     { to: "/delivery", label: "Delivery Orders" },
+    { to: "/transfer", label: "Internal Transfers" },
+    { to: "/adjustment", label: "Stock Adjustments" },
+    { to: "/history", label: "History" },
   ];
 
   return (

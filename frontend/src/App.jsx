@@ -10,6 +10,11 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Receipts from "./pages/Receipts";
 import Delivery from "./pages/Delivery";
+import Transfer from "./pages/Transfer";
+import Adjustment from "./pages/Adjustment";
+import History from "./pages/History";
+import Profile from "./pages/Profile";
+
 function App() {
   const { user } = useContext(AuthContext);
   return (
@@ -29,6 +34,10 @@ function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/receipts" element={<Receipts />} />
               <Route path="/delivery" element={<Delivery />} />
+              <Route path="/transfer" element={<Transfer />} />
+              <Route path="/adjustment" element={<Adjustment />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/profile" element={<Profile />} />
             </>
           )}
         </Routes>
