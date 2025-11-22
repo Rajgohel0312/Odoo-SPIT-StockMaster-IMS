@@ -4,7 +4,10 @@ import { AuthContext } from "../AuthProvider";
 
 export default function Sidebar() {
   const { logout } = useContext(AuthContext);
-
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
   const links = [
     { to: "/", label: "Dashboard" },
     { to: "/profile", label: "Profile" },
@@ -42,7 +45,7 @@ export default function Sidebar() {
 
       <button
         className="mt-auto w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition"
-        onClick={logout}
+        onClick={handleLogout}
       >
         🚪 Logout
       </button>

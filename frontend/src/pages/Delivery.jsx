@@ -9,7 +9,6 @@ export default function Delivery() {
   const [products, setProducts] = useState([]);
   const [items, setItems] = useState([{ productId: "", qty: "" }]);
 
-  // Load warehouses & products from Firestore
   useEffect(() => {
     const unsubWarehouses = onSnapshot(collection(db, "warehouses"), snap =>
       setWarehouses(snap.docs.map(d => ({ id: d.id, ...d.data() })))
@@ -25,7 +24,6 @@ export default function Delivery() {
     };
   }, []);
 
-  // Update product rows correctly
   const handleItemChange = (idx, field, value) => {
     const updated = [...items];
     updated[idx][field] = value;
@@ -53,50 +51,85 @@ export default function Delivery() {
   };
 
   return (
-    <div>
-      <h2>Delivery Orders (Outgoing Stock)</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="max-w-4xl mx-auto p-6">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+        Delivery Orders (Outgoing Stock)
+      </h2>
 
-        {/* 🔹 Warehouse Dropdown */}
-        <select value={warehouseId} required onChange={e => setWarehouseId(e.target.value)}>
-          <option value="">Select Warehouse</option>
-          {warehouses.map(w => (
-            <option key={w.id} value={w.id}>
-              {w.name} ({w.code || w.id})
-            </option>
-          ))}
-        </select>
+      <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+        <form onSubmit={handleSubmit} className="space-y-4">
 
-        {items.map((item, idx) => (
-          <div key={idx} style={{ marginTop: "10px" }}>
-
-            {/* 🔹 Product Dropdown */}
+          {/* Warehouse Dropdown */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Select Warehouse
+            </label>
             <select
+              className="w-full p-3 border rounded-lg bg-gray-50 focus:ring focus:ring-blue-200 outline-none"
+              value={warehouseId}
               required
-              value={item.productId}
-              onChange={(e) => handleItemChange(idx, "productId", e.target.value)}
+              onChange={e => setWarehouseId(e.target.value)}
             >
-              <option value="">Select Product</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.sku})
+              <option value="">Select Warehouse</option>
+              {warehouses.map(w => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.code || w.id})
                 </option>
               ))}
             </select>
-
-            <input
-              type="number"
-              placeholder="Qty"
-              min="1"
-              required
-              onChange={(e) => handleItemChange(idx, "qty", Number(e.target.value))}
-            />
           </div>
-        ))}
 
-        <button type="button" onClick={addRow}>+ Add More Items</button>
-        <button type="submit">Validate Delivery</button>
-      </form>
+          {/* Dynamic Product Rows */}
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border rounded-lg bg-gray-50"
+            >
+              <select
+                required
+                value={item.productId}
+                onChange={(e) => handleItemChange(idx, "productId", e.target.value)}
+                className="p-3 border rounded-lg focus:ring focus:ring-blue-200 outline-none"
+              >
+                <option value="">Select Product</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku})
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                placeholder="Quantity"
+                min="1"
+                required
+                value={item.qty}
+                onChange={(e) => handleItemChange(idx, "qty", Number(e.target.value))}
+                className="p-3 border rounded-lg focus:ring focus:ring-blue-200 outline-none"
+              />
+            </div>
+          ))}
+
+          {/* Buttons */}
+          <div className="flex gap-4 pt-2">
+            <button
+              type="button"
+              onClick={addRow}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
+            >
+              + Add More Items
+            </button>
+
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition"
+            >
+              Validate Delivery
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
