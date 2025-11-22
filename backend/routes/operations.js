@@ -241,37 +241,70 @@ router.get("/history", async (req, res) => {
 
     if (type) q = q.where("type", "==", type);
     if (status) q = q.where("status", "==", status);
-    if (warehouseId)
-      q = q
-        .where("fromWarehouseId", "==", warehouseId)
-        .where("toWarehouseId", "==", warehouseId);
 
-    // Date filtering (createdAt)
+    // Date filtering
     if (startDate && endDate) {
       q = q
         .where("createdAt", ">=", new Date(startDate))
         .where("createdAt", "<=", new Date(endDate));
     }
 
-    const snap = await q.orderBy("createdAt", "desc").limit(100).get();
-    const operations = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    let operations = (
+      await q.orderBy("createdAt", "desc").limit(100).get()
+    ).docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    // Filter Category from Products (JOIN-like behavior)
+    // Warehouse filtering (OR logic)
+    if (warehouseId) {
+      const fromSnap = await db
+        .collection("operations")
+        .where("fromWarehouseId", "==", warehouseId)
+        .get();
+
+      const toSnap = await db
+        .collection("operations")
+        .where("toWarehouseId", "==", warehouseId)
+        .get();
+
+      const list = [
+        ...fromSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+        ...toSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+      ];
+
+      // Merge and remove duplicates
+      const map = new Map();
+      list.forEach((op) => map.set(op.id, op));
+      operations = Array.from(map.values());
+    }
+
+    // Category filtering (over products)
     if (category) {
       const prodSnap = await db
         .collection("products")
         .where("category", "==", category)
         .get();
+
       const productIds = prodSnap.docs.map((d) => d.id);
+
       operations = operations.filter((op) =>
-        op.items.some((item) => productIds.includes(item.productId))
+        op.items?.some((item) => productIds.includes(item.productId))
       );
     }
 
     res.json(operations);
   } catch (error) {
-    res.status(500).json({ error: "Failed to load operation history" });
+    console.error("🔥 History API Error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
-
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await db.collection("operations").doc(id).get();
+    if (!doc.exists) return res.status(404).json({ error: "Not found" });
+    res.json({ id: doc.id, ...doc.data() });
+  } catch (err) {
+    console.error("Operation detail error:", err);
+    res.status(500).json({ error: "Failed to load operation" });
+  }
+});
 module.exports = router;

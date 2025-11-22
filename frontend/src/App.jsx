@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "./App.css";
 import { useContext } from "react";
 import { AuthContext } from "./AuthProvider";
 import Sidebar from "./components/Sidebar";
@@ -14,22 +13,30 @@ import Transfer from "./pages/Transfer";
 import Adjustment from "./pages/Adjustment";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import Warehouses from "./pages/Warehouses";
+import OperationDetail from "./pages/OperationDetail";
+import "./App.css";
 
 function App() {
   const { user } = useContext(AuthContext);
+
   return (
-    <>
-      <BrowserRouter>
-        {user && <Sidebar />}
+    <BrowserRouter>
+      {!user ? (
+        // 🔹 Auth Pages: No Sidebar
         <Routes>
-          {!user ? (
-            <>
-              <Route path="/" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/reset" element={<PasswordReset />} />
-            </>
-          ) : (
-            <>
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/reset" element={<PasswordReset />} />
+        </Routes>
+      ) : (
+        // 🔹 Logged-in Pages: Sidebar + Content Wrapper
+        <div className="flex min-h-screen bg-gray-100">
+          <Sidebar />
+
+          {/* Content Area */}
+          <div className="flex-grow p-6">
+            <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
               <Route path="/receipts" element={<Receipts />} />
@@ -38,11 +45,13 @@ function App() {
               <Route path="/adjustment" element={<Adjustment />} />
               <Route path="/history" element={<History />} />
               <Route path="/profile" element={<Profile />} />
-            </>
-          )}
-        </Routes>
-      </BrowserRouter>
-    </>
+              <Route path="/warehouses" element={<Warehouses />} />
+              <Route path="/operations/:id" element={<OperationDetail />} />
+            </Routes>
+          </div>
+        </div>
+      )}
+    </BrowserRouter>
   );
 }
 

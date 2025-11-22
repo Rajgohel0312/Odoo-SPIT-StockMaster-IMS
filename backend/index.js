@@ -20,13 +20,14 @@ const otpRoutes = require("./routes/otp");
 const productRoutes = require("./routes/products");
 const operationRoutes = require("./routes/operations");
 const dashboardRoutes = require("./routes/dashboard");
-
-
+const warehouseRoutes = require("./routes/warehouses");
+const alertsRoutes = require("./routes/alerts");
 app.use("/api/auth", authRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/products", authenticate, productRoutes);
 app.use("/api/operations", authenticate, operationRoutes);
 app.use("/api/dashboard", authenticate, dashboardRoutes);
-
+app.use("/api/warehouses",authenticate, warehouseRoutes);
+app.use("/api/alerts", authenticate,alertsRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));

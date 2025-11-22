@@ -45,25 +45,36 @@ export default function Products() {
             <th>SKU</th>
             <th>Category</th>
             <th>UoM</th>
+            <th>Stock Per Warehouse</th>
             <th>Total Stock</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {items.map(p => (
-            <tr key={p.id}>
-              <td>{p.name}</td>
-              <td>{p.sku}</td>
-              <td>{p.category}</td>
-              <td>{p.uom}</td>
-              <td>{Object.values(p.stockByWarehouse || {}).reduce((a, b) => a + b, 0)}</td>
-              <td>
-                {Object.values(p.stockByWarehouse || {}).reduce((a, b) => a + b, 0) <= p.reorderLevel
-                  ? <span style={{ color: "red" }}>Low Stock ⚠️</span>
-                  : "OK"}
-              </td>
-            </tr>
-          ))}
+          {items.map(p => {
+            const totalStock = Object.values(p.stockByWarehouse || {}).reduce((a, b) => a + b, 0);
+            return (
+              <tr key={p.id}>
+                <td>{p.name}</td>
+                <td>{p.sku}</td>
+                <td>{p.category}</td>
+                <td>{p.uom}</td>
+                <td>
+                  {p.stockByWarehouse
+                    ? Object.entries(p.stockByWarehouse).map(([warehouseId, qty]) => (
+                        <div key={warehouseId}>{warehouseId}: {qty}</div>
+                      ))
+                    : "No Stock"}
+                </td>
+                <td>{totalStock}</td>
+                <td>
+                  {totalStock <= p.reorderLevel
+                    ? <span style={{ color: "red" }}>Low Stock ⚠️</span>
+                    : "OK"}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
