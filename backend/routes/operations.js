@@ -3,7 +3,11 @@ const router = express.Router();
 const { db } = require("../firebase");
 const { recordOnChain } = require("../services/blockchain");
 
-/* =============== helper: update stock & ledger ==================*/
+// 🔐 Import authentication and role middleware
+const authenticate = require("../middleware/authenticate");
+const authorizeRoles = require("../middleware/authorizeRole");
+
+/* =============== Helper: update stock & ledger ==================*/
 const applyStockChange = async (
   batch,
   { productId, warehouseFrom, warehouseTo, qtyChange, type, operationId }
@@ -38,211 +42,227 @@ const applyStockChange = async (
   });
 };
 
-/* =============== Receipt ==================*/
-router.post("/receipt", async (req, res) => {
-  try {
-    const { warehouseId, items, notes } = req.body;
-    const userId = req.user?.uid || "system";
+/* ================= RECEIPT (INCOMING STOCK) — Inventory Manager ================= */
+router.post(
+  "/receipt",
+  authenticate,
+  authorizeRoles("inventory_manager"),
+  async (req, res) => {
+    try {
+      const { warehouseId, items, notes } = req.body;
+      const userId = req.user?.uid || "system";
 
-    const opRef = db.collection("operations").doc();
-    const batch = db.batch();
+      const opRef = db.collection("operations").doc();
+      const batch = db.batch();
 
-    batch.set(opRef, {
-      type: "RECEIPT",
-      status: "DONE",
-      warehouseId,
-      items,
-      createdBy: userId,
-      notes: notes || "",
-      createdAt: new Date(),
-      validatedAt: new Date(),
-    });
-
-    for (const item of items) {
-      await applyStockChange(batch, {
-        productId: item.productId,
-        warehouseTo: warehouseId,
-        qtyChange: Number(item.qty),
+      batch.set(opRef, {
         type: "RECEIPT",
-        operationId: opRef.id,
+        status: "DONE",
+        warehouseId,
+        items,
+        createdBy: userId,
+        notes: notes || "",
+        createdAt: new Date(),
+        validatedAt: new Date(),
       });
+
+      for (const item of items) {
+        await applyStockChange(batch, {
+          productId: item.productId,
+          warehouseTo: warehouseId,
+          qtyChange: Number(item.qty),
+          type: "RECEIPT",
+          operationId: opRef.id,
+        });
+      }
+
+      await batch.commit();
+
+      const txHash = await recordOnChain(
+        opRef.id,
+        "RECEIPT",
+        Math.floor(Date.now() / 1000)
+      );
+      await opRef.update({
+        txHash,
+        blockchainStatus: txHash ? "CONFIRMED" : "FAILED",
+        explorerUrl: txHash
+          ? `https://mumbai.polygonscan.com/tx/${txHash}`
+          : null,
+      });
+      res.json({ message: "Receipt recorded", id: opRef.id, txHash });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
     }
-
-    await batch.commit();
-
-    const txHash = await recordOnChain(
-      opRef.id,
-      "RECEIPT",
-      Math.floor(Date.now() / 1000)
-    );
-    await opRef.update({
-      txHash,
-      blockchainStatus: txHash ? "CONFIRMED" : "FAILED",
-      explorerUrl: txHash
-        ? `https://mumbai.polygonscan.com/tx/${txHash}`
-        : null,
-    });
-    res.json({ message: "Receipt recorded", id: opRef.id, txHash });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
   }
-});
+);
 
-/* =============== Delivery ==================*/
-router.post("/delivery", async (req, res) => {
-  try {
-    const { warehouseId, items, notes } = req.body;
-    const userId = req.user.uid;
+/* ================= DELIVERY (OUTGOING STOCK) — Inventory Manager ================= */
+router.post(
+  "/delivery",
+  authenticate,
+  authorizeRoles("inventory_manager"),
+  async (req, res) => {
+    try {
+      const { warehouseId, items, notes } = req.body;
+      const userId = req.user.uid;
 
-    const batch = db.batch();
-    const opRef = db.collection("operations").doc();
-    batch.set(opRef, {
-      type: "DELIVERY",
-      status: "DONE",
-      fromWarehouseId: warehouseId,
-      toWarehouseId: null,
-      items,
-      notes: notes || "",
-      createdBy: userId,
-      createdAt: new Date(),
-      validatedAt: new Date(),
-    });
-
-    for (const item of items) {
-      await applyStockChange(batch, {
-        productId: item.productId,
-        warehouseFrom: warehouseId,
-        warehouseTo: null,
-        qtyChange: -Math.abs(item.qty),
+      const batch = db.batch();
+      const opRef = db.collection("operations").doc();
+      batch.set(opRef, {
         type: "DELIVERY",
-        operationId: opRef.id,
+        status: "DONE",
+        fromWarehouseId: warehouseId,
+        toWarehouseId: null,
+        items,
+        notes: notes || "",
+        createdBy: userId,
+        createdAt: new Date(),
+        validatedAt: new Date(),
       });
+
+      for (const item of items) {
+        await applyStockChange(batch, {
+          productId: item.productId,
+          warehouseFrom: warehouseId,
+          warehouseTo: null,
+          qtyChange: -Math.abs(item.qty),
+          type: "DELIVERY",
+          operationId: opRef.id,
+        });
+      }
+
+      await batch.commit();
+      const txHash = await recordOnChain(
+        opRef.id,
+        "DELIVERY",
+        Math.floor(Date.now() / 1000)
+      );
+      res.json({ message: "Delivery recorded", id: opRef.id, txHash });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
     }
-
-    await batch.commit();
-    const txHash = await recordOnChain(
-      opRef.id,
-      "DELIVERY",
-      Math.floor(Date.now() / 1000)
-    );
-    res.json({ message: "Delivery recorded", id: opRef.id, txHash });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
   }
-});
+);
 
-/* =============== Transfer ==================*/
-router.post("/transfer", async (req, res) => {
-  try {
-    const { fromWarehouseId, toWarehouseId, items, notes } = req.body;
-    const userId = req.user.uid;
+/* ================= TRANSFER — BOTH Inventory Manager & Warehouse Staff ================= */
+router.post(
+  "/transfer",
+  authenticate,
+  authorizeRoles("inventory_manager", "warehouse_staff"),
+  async (req, res) => {
+    try {
+      const { fromWarehouseId, toWarehouseId, items, notes } = req.body;
+      const userId = req.user.uid;
 
-    const batch = db.batch();
-    const opRef = db.collection("operations").doc();
-    batch.set(opRef, {
-      type: "TRANSFER",
-      status: "DONE",
-      fromWarehouseId,
-      toWarehouseId,
-      items,
-      notes: notes || "",
-      createdBy: userId,
-      createdAt: new Date(),
-      validatedAt: new Date(),
-    });
-
-    for (const item of items) {
-      // subtract from source
-      await applyStockChange(batch, {
-        productId: item.productId,
-        warehouseFrom: fromWarehouseId,
-        warehouseTo: null,
-        qtyChange: -Math.abs(item.qty),
+      const batch = db.batch();
+      const opRef = db.collection("operations").doc();
+      batch.set(opRef, {
         type: "TRANSFER",
-        operationId: opRef.id,
+        status: "DONE",
+        fromWarehouseId,
+        toWarehouseId,
+        items,
+        notes: notes || "",
+        createdBy: userId,
+        createdAt: new Date(),
+        validatedAt: new Date(),
       });
-      // add to destination
+
+      for (const item of items) {
+        await applyStockChange(batch, {
+          productId: item.productId,
+          warehouseFrom: fromWarehouseId,
+          warehouseTo: null,
+          qtyChange: -Math.abs(item.qty),
+          type: "TRANSFER",
+          operationId: opRef.id,
+        });
+        await applyStockChange(batch, {
+          productId: item.productId,
+          warehouseFrom: null,
+          warehouseTo: toWarehouseId,
+          qtyChange: item.qty,
+          type: "TRANSFER",
+          operationId: opRef.id,
+        });
+      }
+
+      await batch.commit();
+      const txHash = await recordOnChain(
+        opRef.id,
+        "TRANSFER",
+        Math.floor(Date.now() / 1000)
+      );
+      res.json({ message: "Transfer recorded", id: opRef.id, txHash });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  }
+);
+
+/* ================= ADJUSTMENT — BOTH Inventory Manager & Warehouse Staff ================= */
+router.post(
+  "/adjustment",
+  authenticate,
+  authorizeRoles("inventory_manager", "warehouse_staff"),
+  async (req, res) => {
+    try {
+      const { warehouseId, productId, countedQty, notes } = req.body;
+      const userId = req.user.uid;
+
+      const prodRef = db.collection("products").doc(productId);
+      const prodSnap = await prodRef.get();
+      const prodData = prodSnap.data();
+      const stockByWarehouse = prodData.stockByWarehouse || {};
+      const current = stockByWarehouse[warehouseId] || 0;
+      const diff = countedQty - current;
+
+      const batch = db.batch();
+      const opRef = db.collection("operations").doc();
+      batch.set(opRef, {
+        type: "ADJUSTMENT",
+        status: "DONE",
+        fromWarehouseId: warehouseId,
+        toWarehouseId: warehouseId,
+        items: [{ productId, qty: diff }],
+        notes: notes || "",
+        createdBy: userId,
+        createdAt: new Date(),
+        validatedAt: new Date(),
+      });
+
       await applyStockChange(batch, {
-        productId: item.productId,
+        productId,
         warehouseFrom: null,
-        warehouseTo: toWarehouseId,
-        qtyChange: item.qty,
-        type: "TRANSFER",
+        warehouseTo: warehouseId,
+        qtyChange: diff,
+        type: "ADJUSTMENT",
         operationId: opRef.id,
       });
+
+      await batch.commit();
+      const txHash = await recordOnChain(
+        opRef.id,
+        "ADJUSTMENT",
+        Math.floor(Date.now() / 1000)
+      );
+      res.json({ message: "Adjustment recorded", id: opRef.id, txHash });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
     }
-
-    await batch.commit();
-    const txHash = await recordOnChain(
-      opRef.id,
-      "TRANSFER",
-      Math.floor(Date.now() / 1000)
-    );
-    res.json({ message: "Transfer recorded", id: opRef.id, txHash });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
   }
-});
+);
 
-/* =============== Adjustment ==================*/
-router.post("/adjustment", async (req, res) => {
-  try {
-    const { warehouseId, productId, countedQty, notes } = req.body;
-    const userId = req.user.uid;
-
-    const prodRef = db.collection("products").doc(productId);
-    const prodSnap = await prodRef.get();
-    const prodData = prodSnap.data();
-    const stockByWarehouse = prodData.stockByWarehouse || {};
-    const current = stockByWarehouse[warehouseId] || 0;
-    const diff = countedQty - current; // + or -
-
-    const batch = db.batch();
-    const opRef = db.collection("operations").doc();
-    batch.set(opRef, {
-      type: "ADJUSTMENT",
-      status: "DONE",
-      fromWarehouseId: warehouseId,
-      toWarehouseId: warehouseId,
-      items: [{ productId, qty: diff }],
-      notes: notes || "",
-      createdBy: userId,
-      createdAt: new Date(),
-      validatedAt: new Date(),
-    });
-
-    await applyStockChange(batch, {
-      productId,
-      warehouseFrom: null,
-      warehouseTo: warehouseId,
-      qtyChange: diff,
-      type: "ADJUSTMENT",
-      operationId: opRef.id,
-    });
-
-    await batch.commit();
-    const txHash = await recordOnChain(
-      opRef.id,
-      "ADJUSTMENT",
-      Math.floor(Date.now() / 1000)
-    );
-    res.json({ message: "Adjustment recorded", id: opRef.id, txHash });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-/* =============== History ==================*/
-router.get("/history", async (req, res) => {
+/* ================= HISTORY — Read only (Both roles) ================= */
+router.get("/history", authenticate, async (req, res) => {
   try {
     let { type, status, warehouseId, category, startDate, endDate } = req.query;
 
     let q = db.collection("operations");
-
     if (type) q = q.where("type", "==", type);
     if (status) q = q.where("status", "==", status);
 
-    // Date filtering
     if (startDate && endDate) {
       q = q
         .where("createdAt", ">=", new Date(startDate))
@@ -253,7 +273,6 @@ router.get("/history", async (req, res) => {
       await q.orderBy("createdAt", "desc").limit(100).get()
     ).docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    // Warehouse filtering (OR logic)
     if (warehouseId) {
       const fromSnap = await db
         .collection("operations")
@@ -270,13 +289,11 @@ router.get("/history", async (req, res) => {
         ...toSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
       ];
 
-      // Merge and remove duplicates
       const map = new Map();
       list.forEach((op) => map.set(op.id, op));
       operations = Array.from(map.values());
     }
 
-    // Category filtering (over products)
     if (category) {
       const prodSnap = await db
         .collection("products")
@@ -293,10 +310,15 @@ router.get("/history", async (req, res) => {
     res.json(operations);
   } catch (error) {
     console.error("🔥 History API Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      error:
+        "Firestore index missing or query error. Please check server logs.",
+    });
   }
 });
-router.get("/:id", async (req, res) => {
+
+/* ================= Single Operation Fetch ================= */
+router.get("/:id", authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const doc = await db.collection("operations").doc(id).get();
@@ -307,4 +329,5 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to load operation" });
   }
 });
+
 module.exports = router;

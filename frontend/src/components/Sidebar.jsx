@@ -1,23 +1,42 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../AuthProvider";
 
 export default function Sidebar() {
-  const { logout } = useContext(AuthContext);
+  const { logout, role } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const handleLogout = async () => {
     await logout();
     navigate("/");
   };
-  const links = [
+
+  // 🔹 Common to all users
+  const commonLinks = [
     { to: "/", label: "Dashboard" },
     { to: "/profile", label: "Profile" },
+    { to: "/history", label: "History" },
+  ];
+
+  // 🔹 Inventory Manager Features
+  const managerLinks = [
     { to: "/products", label: "Products" },
     { to: "/receipts", label: "Receipts" },
     { to: "/delivery", label: "Delivery Orders" },
+    { to: "/warehouses", label: "Settings: Warehouses" },
+  ];
+
+  // 🔹 Warehouse Staff Features
+  const staffLinks = [
     { to: "/transfer", label: "Internal Transfers" },
     { to: "/adjustment", label: "Stock Adjustments" },
-    { to: "/history", label: "History" },
-    { to: "/warehouses", label: "Settings: Warehouses" },
+  ];
+
+  // 🔹 Final allowed links based on role
+  const links = [
+    ...commonLinks,
+    ...(role === "inventory_manager" ? managerLinks : []),
+    ...(role === "warehouse_staff" ? staffLinks : []),
   ];
 
   return (
