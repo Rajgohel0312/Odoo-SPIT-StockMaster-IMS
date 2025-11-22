@@ -2,7 +2,14 @@ import { useState, useEffect } from "react";
 import api from "../api";
 import { db } from "../firebaseConfig";
 import { collection, onSnapshot } from "firebase/firestore";
-import { FaPlus, FaTrash, FaTruckMoving, FaWarehouse, FaBoxOpen, FaCheckCircle } from "react-icons/fa";
+import {
+  FaPlus,
+  FaTrash,
+  FaTruckMoving,
+  FaWarehouse,
+  FaBoxOpen,
+  FaCheckCircle,
+} from "react-icons/fa";
 import { toast } from "react-toastify";
 
 export default function Delivery() {
@@ -13,12 +20,12 @@ export default function Delivery() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const unsubWarehouses = onSnapshot(collection(db, "warehouses"), snap =>
-      setWarehouses(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    const unsubWarehouses = onSnapshot(collection(db, "warehouses"), (snap) =>
+      setWarehouses(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
-    const unsubProducts = onSnapshot(collection(db, "products"), snap =>
-      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    const unsubProducts = onSnapshot(collection(db, "products"), (snap) =>
+      setProducts(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     );
 
     return () => {
@@ -45,13 +52,20 @@ export default function Delivery() {
     e.preventDefault();
 
     if (!warehouseId) return toast.warning("Please select a warehouse!");
-    if (items.some(i => !i.productId || i.qty <= 0))
+    if (items.some((i) => !i.productId || i.qty <= 0))
       return toast.error("Please select valid products and quantities!");
 
     try {
       setLoading(true);
-      const res = await api.post("/operations/delivery", { warehouseId, items });
-      toast.success(`Delivery Successful! Tx: ${res.data.txHash}`);
+      const res = await api.post("/operations/delivery", {
+        warehouseId,
+        items,
+      });
+      toast.success(
+        `Delivery Successful! Transaction Hash: ${
+          res.data.txHash || "Processing"
+        }`
+      );
 
       setItems([{ productId: "", qty: "" }]);
       setWarehouseId("");
@@ -70,7 +84,6 @@ export default function Delivery() {
 
       <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
         <form onSubmit={handleSubmit} className="space-y-4">
-
           {/* Warehouse Dropdown */}
           <div>
             <label className="block text-gray-700 font-medium mb-1 flex items-center gap-2">
@@ -80,10 +93,10 @@ export default function Delivery() {
               className="w-full p-3 border rounded-lg bg-gray-50 focus:ring focus:ring-blue-200 outline-none"
               value={warehouseId}
               required
-              onChange={e => setWarehouseId(e.target.value)}
+              onChange={(e) => setWarehouseId(e.target.value)}
             >
               <option value="">-- Select Warehouse --</option>
-              {warehouses.map(w => (
+              {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name} ({w.code || w.id})
                 </option>
@@ -93,7 +106,7 @@ export default function Delivery() {
 
           {/* Dynamic Product Rows */}
           {items.map((item, idx) => {
-            const product = products.find(p => p.id === item.productId);
+            const product = products.find((p) => p.id === item.productId);
             return (
               <div
                 key={idx}
@@ -107,7 +120,9 @@ export default function Delivery() {
                   <select
                     required
                     value={item.productId}
-                    onChange={(e) => handleItemChange(idx, "productId", e.target.value)}
+                    onChange={(e) =>
+                      handleItemChange(idx, "productId", e.target.value)
+                    }
                     className="p-3 border rounded-lg focus:ring focus:ring-blue-200 outline-none"
                   >
                     <option value="">Select Product</option>
@@ -120,7 +135,10 @@ export default function Delivery() {
 
                   {product && (
                     <p className="text-xs mt-1 text-gray-600">
-                      Stock: <span className="font-semibold">{product.quantity || 0}</span>
+                      Stock:{" "}
+                      <span className="font-semibold">
+                        {product.quantity || 0}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -136,7 +154,9 @@ export default function Delivery() {
                     min="1"
                     required
                     value={item.qty}
-                    onChange={(e) => handleItemChange(idx, "qty", Number(e.target.value))}
+                    onChange={(e) =>
+                      handleItemChange(idx, "qty", Number(e.target.value))
+                    }
                     className="p-3 border rounded-lg focus:ring focus:ring-blue-200 outline-none"
                   />
                 </div>

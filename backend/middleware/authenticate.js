@@ -8,6 +8,8 @@ const authenticate = async (req, res, next) => {
 
   try {
     const decoded = await auth.verifyIdToken(token);
+    console.log(decoded);
+    
     req.user = decoded;
     next();
   } catch (error) {

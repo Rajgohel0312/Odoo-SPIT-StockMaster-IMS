@@ -46,7 +46,7 @@ const applyStockChange = async (
 router.post(
   "/receipt",
   authenticate,
-  authorizeRoles("inventory_manager"),
+  authorizeRoles("inventory_manager", "warehouse_staff"),
   async (req, res) => {
     try {
       const { warehouseId, items, notes } = req.body;
