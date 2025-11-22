@@ -8,6 +8,8 @@ import Signup from "./pages/Signup";
 import PasswordReset from "./pages/PasswordReset";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import Receipts from "./pages/Receipts";
+import Delivery from "./pages/Delivery";
 function App() {
   const { user } = useContext(AuthContext);
   return (
@@ -25,6 +27,8 @@ function App() {
             <>
               <Route path="/" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/receipts" element={<Receipts />} />
+              <Route path="/delivery" element={<Delivery />} />
             </>
           )}
         </Routes>

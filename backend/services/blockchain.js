@@ -5,9 +5,13 @@ let contract;
 
 const initBlockchain = () => {
   const provider = new ethers.JsonRpcProvider(process.env.BLOCKCHAIN_RPC);
-  const wallet = new ethers.Wallet(process.env.BLOCKCHAIN_PRIVATE_KEY, provider);
+  const wallet = new ethers.Wallet(
+    process.env.BLOCKCHAIN_PRIVATE_KEY,
+    provider
+  );
 
-  const abi = require("../blockchain/StockLedger_abi.json");
+  const contractJSON = require("../blockchain/StockLedger_abi.json");
+  const abi = contractJSON.abi;
   const address = process.env.BLOCKCHAIN_CONTRACT_ADDRESS;
 
   contract = new ethers.Contract(address, abi, wallet);

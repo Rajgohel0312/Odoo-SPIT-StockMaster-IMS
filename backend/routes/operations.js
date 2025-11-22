@@ -1,35 +1,30 @@
 const express = require("express");
 const router = express.Router();
-const { db } = require("../index");
+const { db } = require("../firebase");
 const { recordOnChain } = require("../services/blockchain");
 
 /* =============== helper: update stock & ledger ==================*/
- 
-const applyStockChange = async (batch, {
-  productId,
-  warehouseFrom,
-  warehouseTo,
-  qtyChange,   // positive or negative for that warehouse
-  type,
-  operationId
-}) => {
+const applyStockChange = async (
+  batch,
+  { productId, warehouseFrom, warehouseTo, qtyChange, type, operationId }
+) => {
   const prodRef = db.collection("products").doc(productId);
   const prodSnap = await prodRef.get();
-  const prodData = prodSnap.data();
+
+  const prodData = prodSnap.exists ? prodSnap.data() : {};
   const stockByWarehouse = prodData.stockByWarehouse || {};
 
   if (warehouseTo) {
-    const current = stockByWarehouse[warehouseTo] || 0;
-    const newQty = current + qtyChange; // for receipts/delivery
-    stockByWarehouse[warehouseTo] = newQty;
-  }
-  if (warehouseFrom && type === "TRANSFER") {
-    const current = stockByWarehouse[warehouseFrom] || 0;
-    const newQty = current - Math.abs(qtyChange);
-    stockByWarehouse[warehouseFrom] = newQty;
+    stockByWarehouse[warehouseTo] =
+      (stockByWarehouse[warehouseTo] || 0) + qtyChange;
   }
 
-  batch.update(prodRef, { stockByWarehouse });
+  if (warehouseFrom && type === "TRANSFER") {
+    stockByWarehouse[warehouseFrom] =
+      (stockByWarehouse[warehouseFrom] || 0) - Math.abs(qtyChange);
+  }
+
+  batch.set(prodRef, { stockByWarehouse }, { merge: true });
 
   const ledgerRef = db.collection("stock_ledger").doc();
   batch.set(ledgerRef, {
@@ -47,18 +42,18 @@ const applyStockChange = async (batch, {
 router.post("/receipt", async (req, res) => {
   try {
     const { warehouseId, items, notes } = req.body;
-    const userId = req.user.uid;
+    const userId = req.user?.uid || "system";
 
-    const batch = db.batch();
     const opRef = db.collection("operations").doc();
+    const batch = db.batch();
+
     batch.set(opRef, {
       type: "RECEIPT",
       status: "DONE",
-      fromWarehouseId: null,
-      toWarehouseId: warehouseId,
+      warehouseId,
       items,
-      notes: notes || "",
       createdBy: userId,
+      notes: notes || "",
       createdAt: new Date(),
       validatedAt: new Date(),
     });
@@ -66,16 +61,27 @@ router.post("/receipt", async (req, res) => {
     for (const item of items) {
       await applyStockChange(batch, {
         productId: item.productId,
-        warehouseFrom: null,
         warehouseTo: warehouseId,
-        qtyChange: item.qty,
+        qtyChange: Number(item.qty),
         type: "RECEIPT",
         operationId: opRef.id,
       });
     }
 
     await batch.commit();
-    const txHash = await recordOnChain(opRef.id, "RECEIPT", Math.floor(Date.now() / 1000));
+
+    const txHash = await recordOnChain(
+      opRef.id,
+      "RECEIPT",
+      Math.floor(Date.now() / 1000)
+    );
+    await opRef.update({
+      txHash,
+      blockchainStatus: txHash ? "CONFIRMED" : "FAILED",
+      explorerUrl: txHash
+        ? `https://mumbai.polygonscan.com/tx/${txHash}`
+        : null,
+    });
     res.json({ message: "Receipt recorded", id: opRef.id, txHash });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -114,7 +120,11 @@ router.post("/delivery", async (req, res) => {
     }
 
     await batch.commit();
-    const txHash = await recordOnChain(opRef.id, "DELIVERY", Math.floor(Date.now() / 1000));
+    const txHash = await recordOnChain(
+      opRef.id,
+      "DELIVERY",
+      Math.floor(Date.now() / 1000)
+    );
     res.json({ message: "Delivery recorded", id: opRef.id, txHash });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -163,7 +173,11 @@ router.post("/transfer", async (req, res) => {
     }
 
     await batch.commit();
-    const txHash = await recordOnChain(opRef.id, "TRANSFER", Math.floor(Date.now() / 1000));
+    const txHash = await recordOnChain(
+      opRef.id,
+      "TRANSFER",
+      Math.floor(Date.now() / 1000)
+    );
     res.json({ message: "Transfer recorded", id: opRef.id, txHash });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -207,7 +221,11 @@ router.post("/adjustment", async (req, res) => {
     });
 
     await batch.commit();
-    const txHash = await recordOnChain(opRef.id, "ADJUSTMENT", Math.floor(Date.now() / 1000));
+    const txHash = await recordOnChain(
+      opRef.id,
+      "ADJUSTMENT",
+      Math.floor(Date.now() / 1000)
+    );
     res.json({ message: "Adjustment recorded", id: opRef.id, txHash });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -8,19 +8,23 @@ export default function Sidebar() {
   const links = [
     { to: "/", label: "Dashboard" },
     { to: "/products", label: "Products" },
+    { to: "/receipts", label: "Receipts" },
+    { to: "/delivery", label: "Delivery Orders" },
   ];
 
   return (
     <aside className="sidebar">
       <h2>StockMaster</h2>
       <nav>
-        {links.map(link => (
+        {links.map((link) => (
           <NavLink key={link.to} to={link.to} className="nav-link">
             {link.label}
           </NavLink>
         ))}
       </nav>
-      <button className="logout-btn" onClick={logout}>🚪 Logout</button>
+      <button className="logout-btn" onClick={logout}>
+        🚪 Logout
+      </button>
     </aside>
   );
 }
