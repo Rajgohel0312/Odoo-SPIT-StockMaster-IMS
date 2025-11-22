@@ -1,10 +1,9 @@
 import { NavLink } from "react-router-dom";
-
+import { useContext } from "react";
+import { AuthContext } from "../AuthProvider";
 export default function Sidebar() {
-  const links = [
-    { to: "/", label: "Dashboard" },
-   
-  ];
+  const { logout } = useContext(AuthContext);
+  const links = [{ to: "/", label: "Dashboard" }];
 
   return (
     <aside className="sidebar">
@@ -16,6 +15,10 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <button className="logout-btn" onClick={logout}>
+        🚪 Logout
+      </button>
     </aside>
   );
 }

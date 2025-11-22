@@ -4,6 +4,7 @@ import { useContext } from "react";
 import { AuthContext } from "./AuthProvider";
 import Sidebar from './components/Sidebar'; 
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 function App() {
    const { user } = useContext(AuthContext);
   return (
@@ -14,6 +15,7 @@ function App() {
         {!user? (
           <>
           <Route path="/" element={<Login />} />
+           <Route path="/signup" element={<Signup />} />
           </>
         ):(
           <>
